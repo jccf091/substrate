@@ -24,7 +24,7 @@ use crate::Module as Contracts;
 
 use frame_benchmarking::{benchmarks, account};
 use frame_system::{Module as System, RawOrigin};
-use parity_wasm::elements::FuncBody;
+use parity_wasm::elements::{Instruction, FuncBody};
 use sp_runtime::traits::{Hash, Bounded, SaturatedConversion, CheckedDiv};
 
 struct WasmModule<T:Trait> {
@@ -56,7 +56,7 @@ fn compile_module<T: Trait>(code: &[u8]) -> Result<WasmModule<T>, &str> {
 	})
 }
 
-fn contract_with_call_body<T: Trait>(body: FuncBody) -> WasmModule<T> {
+fn create_contract_code<T: Trait>(deploy_body: Option<FuncBody>, call_body: Option<FuncBody>) -> WasmModule<T> {
 	use parity_wasm::elements::{
 		Instructions, Instruction::End,
 	};
@@ -64,12 +64,12 @@ fn contract_with_call_body<T: Trait>(body: FuncBody) -> WasmModule<T> {
 		// deploy function (idx 0)
 		.function()
 			.signature().with_params(vec![]).with_return_type(None).build()
-			.body().with_instructions(Instructions::new(vec![End])).build()
+			.with_body(deploy_body.unwrap())
 			.build()
 		// call function (idx 1)
 		.function()
 			.signature().with_params(vec![]).with_return_type(None).build()
-			.with_body(body)
+			.with_body(call_body.unwrap())
 			.build()
 		.export().field("deploy").internal().func(0).build()
 		.export().field("call").internal().func(1).build()
@@ -82,7 +82,20 @@ fn contract_with_call_body<T: Trait>(body: FuncBody) -> WasmModule<T> {
 	}
 }
 
-fn expanded_contract<T: Trait>(target_bytes: u32) -> WasmModule<T> {
+fn body_from_repeated(instructions: &[Instruction], repetitions: usize) -> FuncBody {
+	let instructions = parity_wasm::elements::Instructions::new(
+		instructions
+			.iter()
+			.cycle()
+			.take(instructions.len() * repetitions)
+			.cloned()
+			.chain(sp_std::iter::once(Instruction::End))
+			.collect()
+	);
+	FuncBody::new(Vec::new(), instructions)
+}
+
+fn contract_code_of_size<T: Trait>(target_bytes: u32) -> WasmModule<T> {
 	use parity_wasm::elements::{
 		Instruction::{self, If, I32Const, Return, End},
 		BlockType, Instructions,
@@ -99,16 +112,7 @@ fn expanded_contract<T: Trait>(target_bytes: u32) -> WasmModule<T> {
 		Return,
 		End,
 	];
-	let instructions = Instructions::new(
-		EXPANSION
-			.iter()
-			.cycle()
-			.take(EXPANSION.len() * expansions)
-			.cloned()
-			.chain(sp_std::iter::once(End))
-			.collect()
-	);
-	contract_with_call_body::<T>(FuncBody::new(Vec::new(), instructions))
+	create_contract_code::<T>(None, Some(body_from_repeated(&EXPANSION, expansions)))
 }
 
 /// Set the block number to one.
@@ -211,7 +215,7 @@ benchmarks! {
 	put_code {
 		let n in 0 .. Contracts::<T>::current_schedule().max_code_size;
 		let caller = create_funded_user::<T>("caller", 0);
-		let module = expanded_contract::<T>(n);
+		let module = contract_code_of_size::<T>(n);
 		let origin = RawOrigin::Signed(caller);
 	}: _(origin, module.code)
 
@@ -293,6 +297,12 @@ benchmarks! {
 			funding::<T>() - instance.endowment + <T as Trait>::SurchargeReward::get(),
 		);
 	}
+
+	seal_balance {
+		let instance = instantiate_raw_contract("caller", load_module!("seal_balance")?, vec![])?;
+		let origin = RawOrigin::Signed(instance.caller.clone());
+
+	}: call(origin, instance.addr, 0.into(), Weight::max_value(), vec![])
 }
 
 #[cfg(test)]
@@ -333,6 +343,13 @@ mod tests {
 	fn claim_surcharge() {
 		ExtBuilder::default().build().execute_with(|| {
 			assert_ok!(test_benchmark_claim_surcharge::<Test>());
+		});
+	}
+
+	#[test]
+	fn seal_balance() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(test_benchmark_seal_balance::<Test>());
 		});
 	}
 }
