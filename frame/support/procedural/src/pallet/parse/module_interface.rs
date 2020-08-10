@@ -25,6 +25,7 @@ pub struct ModuleInterfaceDef {
 	pub instances: Vec<helper::InstanceUsage>,
 }
 
+// TODO TODO: ensure blocknumber is frame_system blocknumber or write it in the doc
 impl ModuleInterfaceDef {
 	pub fn try_from(index: usize, item: &mut syn::Item) -> syn::Result<Self> {
 		if let syn::Item::Impl(item) = item {

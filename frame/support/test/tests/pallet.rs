@@ -1,13 +1,7 @@
-#[frame_support::pallet]
+#[frame_support::pallet(ExamplePallet)]
 mod pallet {
 	pub use frame_support::pallet_prelude::*;
-	pub use frame_system::OriginFor;
-
-	// TODO TODO: generate by macro
-	pub struct DefaultInstance;
-	impl Instance for DefaultInstance {
-		const PREFIX: &'static str = "toto";
-	}
+	pub use frame_system::pallet_prelude::*;
 
 	#[pallet::trait_]
 	pub trait Trait<I: Instance = DefaultInstance>: frame_system::Trait {
@@ -20,7 +14,7 @@ mod pallet {
 	pub struct Module<T, I = DefaultInstance>(core::marker::PhantomData::<(T, I)>);
 
 	#[pallet::module_interface]
-	impl<T: Trait<I>, I: Instance> ModuleInterface for Module<T, I> {
+	impl<T: Trait<I>, I: Instance> ModuleInterface<BlockNumberFor<T>> for Module<T, I> {
 	}
 
 	#[pallet::call]
@@ -35,10 +29,10 @@ mod pallet {
 	}
 
 	#[pallet::storage]
-	type MyStorageValue<T: Trait<I>, I = DefaultInstance> = StorageValueType<MyStorageValueP<I>, T::Balance, ValueQuery>;
+	pub type MyStorageValue<T: Trait<I>, I = DefaultInstance> = StorageValueType<MyStorageValueP<I>, T::Balance, ValueQuery>;
 
 	#[pallet::storage]
-	type MyStorage<I = DefaultInstance> = StorageMapType<MyStorageP<I>, Blake2_128Concat, u32, u32>;
+	pub type MyStorage<I = DefaultInstance> = StorageMapType<MyStorageP<I>, Blake2_128Concat, u32, u32>;
 
 	#[pallet::error]
 	pub enum Error<T, I = DefaultInstance> {

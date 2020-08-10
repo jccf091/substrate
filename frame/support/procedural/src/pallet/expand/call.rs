@@ -74,11 +74,11 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 		#[derive(
 			#scrate::codec::Encode,
 			#scrate::codec::Decode,
-			#scrate::CloneBoundTypes,
-			#scrate::EqBoundTypes,
-			#scrate::PartialEqBoundTypes,
+			#scrate::CloneNoBound,
+			#scrate::EqNoBound,
+			#scrate::PartialEqNoBound,
 		)]
-		#[cfg_attr(feature = "std", derive(#scrate::DebugBoundTypes))]
+		#[cfg_attr(feature = "std", derive(#scrate::DebugNoBound))]
 		#[cfg_attr(not(feature = "std"), derive(#scrate::DebugStripped))]
 		#[allow(non_camel_case_types)]
 		pub enum #call_ident<#type_decl_gen> {

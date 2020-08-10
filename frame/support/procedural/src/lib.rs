@@ -292,8 +292,9 @@ pub fn construct_runtime(input: TokenStream) -> TokenStream {
 	construct_runtime::construct_runtime(input)
 }
 
-///#[frame_support::pallet]
 /// ```nocompile
+/// #[frame_support::pallet(Example)]
+/// // NOTE: Example is name of the pallet, it will be used as unique identifier for storage
 /// pub mod pallet {
 /// 	use frame_support::pallet_prelude::*; // Import various types used in pallet definition
 /// 	use frame_system::OriginFor; // OriginFor helper type for implementing dispatchables.
@@ -400,7 +401,7 @@ pub fn construct_runtime(input: TokenStream) -> TokenStream {
 /// 	//
 /// 	// The macro accept either type alias or struct or enum, it checks generics are consistent.
 /// 	//
-/// 	// Type must implement `Default` and `Build` traits // TODO TODO
+/// 	// Type must implement `Default` and `Build` traits // not implemented yet WIP
 /// 	#[pallet::genesis_config]
 /// 	struct GenesisConfig {
 ///			#[default(expr)]
@@ -408,7 +409,7 @@ pub fn construct_runtime(input: TokenStream) -> TokenStream {
 ///			#[genesis_config(additional_fields)]
 /// 	}
 ///
-/// 	impl<T: Trait> Build for GenesisConfig<T> { // TODO TODO
+/// 	impl<T: Trait> Build for GenesisConfig<T> { // not sure about this trait yet WIP
 /// 		fn build(&self) {
 /// 			// build stuff your own stuff
 ///				#[genesis_config(additional_builds)]
@@ -457,25 +458,15 @@ pub fn pallet(attr: TokenStream, item: TokenStream) -> TokenStream {
 	pallet::pallet(attr, item)
 }
 
-#[proc_macro_derive(CloneBoundTypes)]
-pub fn derive_clone_bound_type(input: TokenStream) -> TokenStream {
+/// Derive Clone but do not bound any generic.
+#[proc_macro_derive(CloneNoBound)]
+pub fn derive_clone_no_bound(input: TokenStream) -> TokenStream {
 	use syn::spanned::Spanned;
 
 	let input: syn::DeriveInput = match syn::parse(input) {
 		Ok(input) => input,
 		Err(e) => return e.to_compile_error().into(),
 	};
-
-	// TODO TODO: for now just raw Default without bond as done currently by decl_module
-	// if let Err(e) = trait_bounds::add(
-	// 	&input.ident,
-	// 	&mut input.generics,
-	// 	&input.data,
-	// 	syn::parse_quote!(core::clone::Clone),
-	// 	false,
-	// ) {
-	// 	return e.to_compile_error().into();
-	// }
 
 	let name = &input.ident;
 	let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -531,7 +522,7 @@ pub fn derive_clone_bound_type(input: TokenStream) -> TokenStream {
 			})
 		},
 		syn::Data::Union(_) => {
-			let msg ="Union type not supported by `derive(CloneBoundTypes)`";
+			let msg ="Union type not supported by `derive(CloneNoBound)`";
 			return syn::Error::new(input.span(), msg).to_compile_error().into()
 		},
 	};
@@ -547,23 +538,13 @@ pub fn derive_clone_bound_type(input: TokenStream) -> TokenStream {
 	).into()
 }
 
+/// Derive Debug by returning `"<stripped>"` (also do not bound any generic).
 #[proc_macro_derive(DebugStripped)]
 pub fn derive_debug_stripped(input: TokenStream) -> TokenStream {
 	let input: syn::DeriveInput = match syn::parse(input) {
 		Ok(input) => input,
 		Err(e) => return e.to_compile_error().into(),
 	};
-
-	// TODO TODO: for now just raw Default without bond as done currently by decl_module
-	// if let Err(e) = trait_bounds::add(
-	// 	&input.ident,
-	// 	&mut input.generics,
-	// 	&input.data,
-	// 	syn::parse_quote!(core::fmt::Debug),
-	// 	false,
-	// ) {
-	// 	return e.to_compile_error().into();
-	// }
 
 	let name = &input.ident;
 	let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -572,32 +553,22 @@ pub fn derive_debug_stripped(input: TokenStream) -> TokenStream {
 		const _: () = {
 			impl #impl_generics core::fmt::Debug for #name #ty_generics #where_clause {
 				fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
-					fmt.write_str("<wasm:stripped>")
+					fmt.write_str("<stripped>")
 				}
 			}
 		};
 	).into()
 }
 
-#[proc_macro_derive(DebugBoundTypes)]
-pub fn derive_debug_bound_type(input: TokenStream) -> TokenStream {
+/// Derive Debug but do not bound any generics.
+#[proc_macro_derive(DebugNoBound)]
+pub fn derive_debug_no_bound(input: TokenStream) -> TokenStream {
 	use syn::spanned::Spanned;
 
 	let input: syn::DeriveInput = match syn::parse(input) {
 		Ok(input) => input,
 		Err(e) => return e.to_compile_error().into(),
 	};
-
-	// TODO TODO: for now just raw Default without bond as done currently by decl_module
-	// if let Err(e) = trait_bounds::add(
-	// 	&input.ident,
-	// 	&mut input.generics,
-	// 	&input.data,
-	// 	syn::parse_quote!(core::fmt::Debug),
-	// 	false,
-	// ) {
-	// 	return e.to_compile_error().into();
-	// }
 
 	let input_ident = &input.ident;
 	let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -668,7 +639,7 @@ pub fn derive_debug_bound_type(input: TokenStream) -> TokenStream {
 			})
 		},
 		syn::Data::Union(_) => {
-			let msg ="Union type not supported by `derive(DebugBoundTypes)`";
+			let msg ="Union type not supported by `derive(DebugNoBound)`";
 			return syn::Error::new(input.span(), msg).to_compile_error().into()
 		},
 	};
@@ -685,25 +656,15 @@ pub fn derive_debug_bound_type(input: TokenStream) -> TokenStream {
 }
 
 
-#[proc_macro_derive(PartialEqBoundTypes)]
-pub fn derive_partial_eq_bound_type(input: TokenStream) -> TokenStream {
+/// Derive PartialEq but do not bound any generic.
+#[proc_macro_derive(PartialEqNoBound)]
+pub fn derive_partial_eq_no_bound(input: TokenStream) -> TokenStream {
 	use syn::spanned::Spanned;
 
 	let input: syn::DeriveInput = match syn::parse(input) {
 		Ok(input) => input,
 		Err(e) => return e.to_compile_error().into(),
 	};
-
-	// TODO TODO: for now just raw Default without bond as done currently by decl_module
-	// if let Err(e) = trait_bounds::add(
-	// 	&input.ident,
-	// 	&mut input.generics,
-	// 	&input.data,
-	// 	syn::parse_quote!(core::cmp::PartialEq),
-	// 	false,
-	// ) {
-	// 	return e.to_compile_error().into();
-	// }
 
 	let name = &input.ident;
 	let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -780,7 +741,7 @@ pub fn derive_partial_eq_bound_type(input: TokenStream) -> TokenStream {
 			})
 		},
 		syn::Data::Union(_) => {
-			let msg ="Union type not supported by `derive(CloneBoundTypes)`";
+			let msg ="Union type not supported by `derive(CloneNoBound)`";
 			return syn::Error::new(input.span(), msg).to_compile_error().into()
 		},
 	};
@@ -796,23 +757,13 @@ pub fn derive_partial_eq_bound_type(input: TokenStream) -> TokenStream {
 	).into()
 }
 
-#[proc_macro_derive(EqBoundTypes)]
-pub fn derive_eq_bound_type(input: TokenStream) -> TokenStream {
+/// derive Eq but do no bound any generic.
+#[proc_macro_derive(EqNoBound)]
+pub fn derive_eq_no_bound(input: TokenStream) -> TokenStream {
 	let input: syn::DeriveInput = match syn::parse(input) {
 		Ok(input) => input,
 		Err(e) => return e.to_compile_error().into(),
 	};
-
-	// TODO TODO: for now just raw Default without bond as done currently by decl_module
-	// if let Err(e) = trait_bounds::add(
-	// 	&input.ident,
-	// 	&mut input.generics,
-	// 	&input.data,
-	// 	syn::parse_quote!(core::cmp::Eq),
-	// 	false,
-	// ) {
-	// 	return e.to_compile_error().into();
-	// }
 
 	let name = &input.ident;
 	let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -823,197 +774,3 @@ pub fn derive_eq_bound_type(input: TokenStream) -> TokenStream {
 		};
 	).into()
 }
-
-//mod trait_bounds {
-//	use std::iter;
-
-//	use proc_macro2::Ident;
-//	use syn::{
-//		spanned::Spanned,
-//		visit::{self, Visit},
-//		Generics, Result, Type, TypePath,
-//	};
-
-//	/// Visits the ast and checks if one of the given idents is found.
-//	struct ContainIdents<'a> {
-//		result: bool,
-//		idents: &'a[Ident]
-//	}
-
-//	impl<'a, 'ast> Visit<'ast> for ContainIdents<'a> {
-//		fn visit_ident(&mut self, i: &'ast Ident) {
-//			if self.idents.iter().any(|id| id == i) {
-//				self.result = true;
-//			}
-//		}
-//	}
-
-//	/// Checks if the given type contains one of the given idents.
-//	fn type_contain_idents(ty: &Type, idents: &[Ident]) -> bool {
-//		let mut visitor = ContainIdents { result: false, idents };
-//		visitor.visit_type(ty);
-//		visitor.result
-//	}
-
-//	/// Visits the ast and checks if the a type path starts with the given ident.
-//	struct TypePathStartsWithIdent<'a> {
-//		result: bool,
-//		ident: &'a Ident
-//	}
-
-//	impl<'a, 'ast> Visit<'ast> for TypePathStartsWithIdent<'a> {
-//		fn visit_type_path(&mut self, i: &'ast TypePath) {
-//			if let Some(segment) = i.path.segments.first() {
-//				if &segment.ident == self.ident {
-//					self.result = true;
-//					return;
-//				}
-//			}
-
-//			visit::visit_type_path(self, i);
-//		}
-//	}
-
-//	/// Checks if the given type path or any containing type path starts with the given ident.
-//	fn type_path_or_sub_starts_with_ident(ty: &TypePath, ident: &Ident) -> bool {
-//		let mut visitor = TypePathStartsWithIdent { result: false, ident };
-//		visitor.visit_type_path(ty);
-//		visitor.result
-//	}
-
-//	/// Checks if the given type or any containing type path starts with the given ident.
-//	fn type_or_sub_type_path_starts_with_ident(ty: &Type, ident: &Ident) -> bool {
-//		let mut visitor = TypePathStartsWithIdent { result: false, ident };
-//		visitor.visit_type(ty);
-//		visitor.result
-//	}
-
-//	/// Visits the ast and collects all type paths that do not start or contain the given ident.
-//	///
-//	/// Returns `T`, `N`, `A` for `Vec<(Recursive<T, N>, A)>` with `Recursive` as ident.
-//	struct FindTypePathsNotStartOrContainIdent<'a> {
-//		result: Vec<TypePath>,
-//		ident: &'a Ident
-//	}
-
-//	impl<'a, 'ast> Visit<'ast> for FindTypePathsNotStartOrContainIdent<'a> {
-//		fn visit_type_path(&mut self, i: &'ast TypePath) {
-//			if type_path_or_sub_starts_with_ident(i, &self.ident) {
-//				visit::visit_type_path(self, i);
-//			} else {
-//				self.result.push(i.clone());
-//			}
-//		}
-//	}
-
-//	/// Collects all type paths that do not start or contain the given ident in the given type.
-//	///
-//	/// Returns `T`, `N`, `A` for `Vec<(Recursive<T, N>, A)>` with `Recursive` as ident.
-//	fn find_type_paths_not_start_or_contain_ident(ty: &Type, ident: &Ident) -> Vec<TypePath> {
-//		let mut visitor = FindTypePathsNotStartOrContainIdent { result: Vec::new(), ident };
-//		visitor.visit_type(ty);
-//		visitor.result
-//	}
-
-//	/// Add required trait bounds to all generic types.
-//	pub fn add(
-//		input_ident: &Ident,
-//		generics: &mut Generics,
-//		data: &syn::Data,
-//		codec_bound: syn::Path,
-//		dumb_trait_bounds: bool,
-//	) -> Result<()> {
-//		let ty_params = generics.type_params().map(|p| p.ident.clone()).collect::<Vec<_>>();
-//		if ty_params.is_empty() {
-//			return Ok(());
-//		}
-
-//		let codec_types = get_types_to_add_trait_bound(input_ident, data, &ty_params, dumb_trait_bounds)?;
-
-
-//		if !codec_types.is_empty() {
-//			let where_clause = generics.make_where_clause();
-
-//			codec_types
-//				.into_iter()
-//				.for_each(|ty| {
-//					where_clause.predicates.push(syn::parse_quote!(#ty : #codec_bound))
-//				});
-//		}
-
-//		Ok(())
-//	}
-
-//	/// Returns all types that must be added to the where clause with the respective trait bound.
-//	fn get_types_to_add_trait_bound(
-//		input_ident: &Ident,
-//		data: &syn::Data,
-//		ty_params: &[Ident],
-//		dumb_trait_bound: bool,
-//	) -> Result<Vec<Type>> {
-//		if dumb_trait_bound {
-//			Ok(ty_params.iter().map(|t| syn::parse_quote!( #t )).collect())
-//		} else {
-//			let res = collect_types(&data)?
-//				.into_iter()
-//				// Only add a bound if the type uses a generic
-//				.filter(|ty| type_contain_idents(ty, &ty_params))
-//				// If a struct is cotaining itself as field type, we can not add this type into the where clause.
-//				// This is required to work a round the following compiler bug: https://github.com/rust-lang/rust/issues/47032
-//				.flat_map(|ty| {
-//					find_type_paths_not_start_or_contain_ident(&ty, input_ident)
-//						.into_iter()
-//						.map(|ty| Type::Path(ty.clone()))
-//						// Remove again types that do not contain any of our generic parameters
-//						.filter(|ty| type_contain_idents(ty, &ty_params))
-//						// Add back the original type, as we don't want to loose him.
-//						.chain(iter::once(ty))
-//				})
-//				// Remove all remaining types that start/contain the input ident to not have them in the where clause.
-//				.filter(|ty| !type_or_sub_type_path_starts_with_ident(ty, input_ident))
-//				.collect();
-
-//			Ok(res)
-//		}
-//	}
-
-//	fn collect_types(
-//		data: &syn::Data,
-//	) -> Result<Vec<syn::Type>> {
-//		use syn::*;
-
-//		let types = match *data {
-//			Data::Struct(ref data) => match &data.fields {
-//				| Fields::Named(FieldsNamed { named: fields , .. })
-//				| Fields::Unnamed(FieldsUnnamed { unnamed: fields, .. }) => {
-//					fields.iter()
-//						.map(|f| f.ty.clone())
-//						.collect()
-//				},
-
-//				Fields::Unit => { Vec::new() },
-//			},
-
-//			Data::Enum(ref data) => data.variants.iter()
-//				.flat_map(|variant| {
-//					match &variant.fields {
-//						| Fields::Named(FieldsNamed { named: fields , .. })
-//						| Fields::Unnamed(FieldsUnnamed { unnamed: fields, .. }) => {
-//							fields.iter()
-//								.map(|f| f.ty.clone())
-//								.collect()
-//						},
-
-//						Fields::Unit => { Vec::new() },
-//					}
-//				}).collect(),
-
-//			Data::Union(ref data) => return Err(Error::new(
-//				data.union_token.span(),
-//				"Union types are not supported."
-//			)),
-//		};
-
-//		Ok(types)
-//	}
-//}

@@ -72,14 +72,14 @@ pub fn expand_event(def: &mut Def) -> proc_macro2::TokenStream {
 		#[derive(
 			#scrate::codec::Encode,
 			#scrate::codec::Decode,
-			#scrate::CloneBoundTypes,
-			#scrate::EqBoundTypes,
-			#scrate::PartialEqBoundTypes,
+			#scrate::CloneNoBound,
+			#scrate::EqNoBound,
+			#scrate::PartialEqNoBound,
 		)]
 	));
 
 	event_item.attrs.push(syn::parse_quote!(
-		#[cfg_attr(feature = "std", derive(#scrate::DebugBoundTypes))]
+		#[cfg_attr(feature = "std", derive(#scrate::DebugNoBound))]
 	));
 
 	event_item.attrs.push(syn::parse_quote!(

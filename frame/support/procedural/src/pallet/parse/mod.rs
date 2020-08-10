@@ -29,6 +29,7 @@ pub mod inherent;
 pub mod storage;
 pub mod event;
 pub mod helper;
+pub mod genesis_config;
 
 use syn::spanned::Spanned;
 use frame_support_procedural_tools::generate_crate_access;
@@ -37,6 +38,7 @@ use frame_support_procedural_tools::generate_crate_access;
 
 /// Parsed definition of a pallet.
 pub struct Def {
+	pub name: syn::Ident,
 	pub item: syn::ItemMod,
 	pub trait_: trait_::TraitDef,
 	pub module: module::ModuleDef,
@@ -47,10 +49,11 @@ pub struct Def {
 	pub event: Option<event::EventDef>,
 	pub origin: Option<origin::OriginDef>,
 	pub inherent: Option<inherent::InherentDef>,
+	// pub genesis_config: Option<genesis_config::GenesisConfigDef>,
 }
 
 impl Def {
-	pub fn try_from(mut item: syn::ItemMod) -> syn::Result<Self> {
+	pub fn try_from(name: syn::Ident, mut item: syn::ItemMod) -> syn::Result<Self> {
 		let item_span = item.span().clone();
 		let items = &mut item.content.as_mut()
 			.ok_or_else(|| {
@@ -94,6 +97,7 @@ impl Def {
 		}
 
 		let def = Def {
+			name,
 			item: item,
 			trait_: trait_.ok_or_else(|| syn::Error::new(item_span, "Missing pallet::trait_"))?,
 			module: module

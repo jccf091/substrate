@@ -268,8 +268,8 @@ macro_rules! ord_parameter_types {
 
 #[doc(inline)]
 pub use frame_support_procedural::{
-	decl_storage, construct_runtime, DebugBoundTypes, DebugStripped, CloneBoundTypes, EqBoundTypes,
-	PartialEqBoundTypes, pallet,
+	decl_storage, construct_runtime, DebugNoBound, DebugStripped, CloneNoBound, EqNoBound,
+	PartialEqNoBound, pallet,
 };
 
 /// Return Err of the expression: `return Err($expression);`.
@@ -828,8 +828,7 @@ mod tests {
 
 /// prelude to be used alongside pallet macro, for ease of use.
 pub mod pallet_prelude {
-	pub trait ModuleInterface {} // TODO TODO: move
-	pub use frame_support::traits::{Get, Instance};
+	pub use frame_support::traits::{Get, Instance, ModuleInterface};
 	pub use frame_support::dispatch::DispatchResultWithPostInfo;
 	pub use sp_inherents::ProvideInherent;
 	pub use sp_inherents::InherentData;

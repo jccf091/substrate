@@ -1376,4 +1376,7 @@ impl<T: Trait> Lookup for ChainContext<T> {
 	}
 }
 
-pub type OriginFor<T> = <T as crate::Trait>::Origin; // TODO TODO: move?
+pub mod pallet_prelude {
+	pub type OriginFor<T> = <T as crate::Trait>::Origin;
+	pub type BlockNumberFor<T> = <T as crate::Trait>::BlockNumber;
+}

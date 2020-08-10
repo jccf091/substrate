@@ -21,15 +21,16 @@ mod call;
 mod error;
 mod event;
 mod storage;
+mod module_interface;
+mod store_trait;
+mod instances;
 
 use crate::pallet::Def;
 use quote::ToTokens;
 use frame_support_procedural_tools::{generate_hidden_includes};
 
-// TODO TODO: generate Store trait
-// TODO TODO: generate instances
 // TODO TODO: GenesisConfig
-// TODO TODO: double check metadata
+// TODO TODO: double check metadata (remove stringify and print and use tools)
 
 /// Expand definition, in particular:
 /// * add some bounds and variants to type defined,
@@ -42,6 +43,9 @@ pub fn expand(mut def: Def) -> proc_macro2::TokenStream {
 	let error = error::expand_error(&mut def);
 	let event = event::expand_event(&mut def);
 	let storages = storage::expand_storages(&mut def);
+	let instances = instances::expand_instances(&mut def);
+	let store_trait = store_trait::expand_store_trait(&mut def);
+	let module_interface = module_interface::expand_module_interface(&mut def);
 
 	let scrate_decl = generate_hidden_includes(&def.hidden_crate_name(), "frame-support");
 
@@ -54,6 +58,9 @@ pub fn expand(mut def: Def) -> proc_macro2::TokenStream {
 		#error
 		#event
 		#storages
+		#instances
+		#store_trait
+		#module_interface
 	);
 
 	def.item.content.as_mut().expect("This is checked by parsing").1

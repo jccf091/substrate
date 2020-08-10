@@ -32,9 +32,9 @@ pub fn expand_module(def: &mut Def) -> proc_macro2::TokenStream {
 
 	module_item.attrs.push(syn::parse_quote!(
 		#[derive(
-			#scrate::CloneBoundTypes,
-			#scrate::EqBoundTypes,
-			#scrate::PartialEqBoundTypes,
+			#scrate::CloneNoBound,
+			#scrate::EqNoBound,
+			#scrate::PartialEqNoBound,
 			#scrate::DebugStripped,
 		)]
 	));

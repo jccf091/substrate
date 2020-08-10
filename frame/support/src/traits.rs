@@ -1678,6 +1678,45 @@ impl<T: Default> crate::traits::Get<T> for GetDefault {
 	}
 }
 
+/// The module interface trait. Implementing this lets you express some logic to execute.
+pub trait ModuleInterface<BlockNumber> {
+	/// The block is being finalized. Implement to have something happen.
+	fn on_finalize(_n: BlockNumber) {}
+
+	/// The block is being initialized. Implement to have something happen.
+	///
+	/// Return the non-negotiable weight consumed in the block.
+	fn on_initialize(_n: BlockNumber) -> crate::weights::Weight { 0 }
+
+	/// Perform a module upgrade.
+	///
+	/// # Warning
+	///
+	/// This function will be called before we initialized any runtime state, aka `on_initialize`
+	/// wasn't called yet. So, information like the block number and any other
+	/// block local data are not accessible.
+	///
+	/// Return the non-negotiable weight consumed for runtime upgrade.
+	fn on_runtime_upgrade() -> crate::weights::Weight { 0 }
+
+	/// Implementing this function on a module allows you to perform long-running tasks
+	/// that make (by default) validators generate transactions that feed results
+	/// of those long-running computations back on chain.
+	///
+	/// NOTE: This function runs off-chain, so it can access the block state,
+	/// but cannot preform any alterations. More specifically alterations are
+	/// not forbidden, but they are not persisted in any way after the worker
+	/// has finished.
+	///
+	/// This function is being called after every block import (when fully synced).
+	///
+	/// Implement this and use any of the `Offchain` `sp_io` set of APIs
+	/// to perform off-chain computations, calls and submit transactions
+	/// with results to trigger any on-chain changes.
+	/// Any state alterations are lost and are not persisted.
+	fn offchain_worker(_n: BlockNumber) {}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
